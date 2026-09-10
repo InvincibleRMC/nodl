@@ -2,6 +2,11 @@
 Changelog for package nodl_generator_cpp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* fix: add ament_cmake buildtool_depend to nodl_generator_cpp  (`#151 <https://github.com/ros-tooling/nodl/issues/151>`_)
+* Contributors: Emerson Knapp
+
 2.0.2 (2026-09-04)
 ------------------
 

@@ -2,6 +2,9 @@
 Changelog for package nodl_common_interfaces
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 2.0.2 (2026-09-04)
 ------------------
 

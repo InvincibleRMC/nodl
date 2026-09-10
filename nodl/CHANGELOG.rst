@@ -2,6 +2,12 @@
 Changelog for package nodl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Add conformance test integration to ament_nodl (`#116 <https://github.com/ros-tooling/nodl/issues/116>`_)
+* Make ROS 2 Basics C++ tutorial runnable (`#143 <https://github.com/ros-tooling/nodl/issues/143>`_)
+* Contributors: Luke Sy
+
 2.0.2 (2026-09-04)
 ------------------
 * fix: nodl_docgen CI and fixes (`#149 <https://github.com/ros-tooling/nodl/issues/149>`_)

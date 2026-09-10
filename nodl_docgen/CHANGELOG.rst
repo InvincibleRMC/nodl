@@ -2,6 +2,9 @@
 Changelog for package nodl_docgen
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 2.0.2 (2026-09-04)
 ------------------
 * fix: nodl_docgen CI and fixes (`#149 <https://github.com/ros-tooling/nodl/issues/149>`_)

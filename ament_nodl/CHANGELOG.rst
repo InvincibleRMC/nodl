@@ -2,6 +2,11 @@
 Changelog for package ament_nodl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Add conformance test integration to ament_nodl (`#116 <https://github.com/ros-tooling/nodl/issues/116>`_)
+* Contributors: Luke Sy
+
 2.0.2 (2026-09-04)
 ------------------
 
