@@ -1,0 +1,10 @@
+---
+nodl_version: 2
+description: Candidate Dummy laser contract with a different topic name.
+publishers:
+  - name: scan_regressed
+    type: sensor_msgs/msg/LaserScan
+    description: Synthetic laser scan used by the RViz robot demo.
+    qos:
+      history: SYSTEM_DEFAULT
+      reliability: RELIABLE
