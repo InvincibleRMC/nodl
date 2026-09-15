@@ -7,17 +7,26 @@ from pathlib import Path
 
 import pytest
 
-from nodl_generator_py import generate_python
+from nodl_generator_py import generate_parameter_yaml, generate_python
 from nodl_generator_py.cli import main
 from nodl_generator_py.generator import (
     _qos_to_py,
     _ros_type_to_import,
     _ros_type_to_py,
     _snake_to_pascal,
-    _topic_to_identifier,
+    _target_to_node_name,
 )
 from nodl_schema import load_nodl
-from nodl_schema.models import Durability, History, Liveliness, NodlDocument, QosProfile, Reference, Reliability
+from nodl_schema.models import (
+    Durability,
+    History,
+    Liveliness,
+    NodlDocument,
+    QosProfile,
+    Reference,
+    Reliability,
+    TopicEndpoint,
+)
 
 _FIXTURES = Path(__file__).parent / 'fixtures'
 
@@ -35,28 +44,38 @@ def test_snake_to_pascal(name, expected):
 
 
 @pytest.mark.parametrize(
-    'topic,expected',
+    'target,expected',
     [
-        ('/scan', 'scan'),
-        ('/echo_out', 'echo_out'),
-        ('/my/long/topic', 'my_long_topic'),
-        ('relative', 'relative'),
+        ('my_node_base', 'my_node'),
+        ('my_node', 'my_node'),
     ],
 )
-def test_topic_to_identifier(topic, expected):
-    assert _topic_to_identifier(topic) == expected
+def test_target_to_node_name(target, expected):
+    assert _target_to_node_name(target) == expected
 
 
 @pytest.mark.parametrize(
-    'ros_type,expected_import,expected_symbol',
+    'ros_type,kind,expected_import,expected_symbol',
     [
-        ('std_msgs/msg/String', 'import std_msgs.msg', 'std_msgs.msg.String'),
-        ('std_msgs/String', 'import std_msgs.msg', 'std_msgs.msg.String'),
+        ('std_msgs/msg/String', 'msg', 'import std_msgs.msg', 'std_msgs.msg.String'),
+        ('std_msgs/String', 'msg', 'import std_msgs.msg', 'std_msgs.msg.String'),
+        (
+            'example_interfaces/srv/AddTwoInts',
+            'srv',
+            'import example_interfaces.srv',
+            'example_interfaces.srv.AddTwoInts',
+        ),
+        (
+            'example_interfaces/action/Fibonacci',
+            'action',
+            'import example_interfaces.action',
+            'example_interfaces.action.Fibonacci',
+        ),
     ],
 )
-def test_ros_type_conversion(ros_type, expected_import, expected_symbol):
-    assert _ros_type_to_import(ros_type, 'msg') == expected_import
-    assert _ros_type_to_py(ros_type, 'msg') == expected_symbol
+def test_ros_type_conversion(ros_type, kind, expected_import, expected_symbol):
+    assert _ros_type_to_import(ros_type, kind) == expected_import
+    assert _ros_type_to_py(ros_type, kind) == expected_symbol
 
 
 def test_ros_type_kind_must_match_endpoint():
@@ -89,10 +108,24 @@ def test_qos_to_py():
         assert expected in rendered
 
 
-def test_generate_python():
-    doc = load_nodl(_FIXTURES / 'pubsub_node.nodl.yaml', resolve=False)
+def test_zero_qos_durations_use_unlimited_defaults():
+    qos = QosProfile(
+        history=History.KEEP_LAST,
+        depth=1,
+        reliability=Reliability.RELIABLE,
+        deadline_ns=0,
+        lifespan_ns=0,
+        liveliness_lease_duration_ns=0,
+    )
+    doc = NodlDocument(publishers=[TopicEndpoint(name='status', type='std_msgs/msg/String', qos=qos)])
 
-    generated = generate_python(doc, 'pubsub_node')
+    assert 'Duration' not in generate_python(doc, 'example_node')
+
+
+def test_generate_python():
+    doc = load_nodl(_FIXTURES / 'interfaces_node.nodl.yaml', resolve=False)
+
+    generated = generate_python(doc, 'interfaces_node_base')
 
     tree = ast.parse(generated)
     imports = {
@@ -103,12 +136,25 @@ def test_generate_python():
     )
     assert imports.isdisjoint({'nodl', 'nodl_schema', 'nodl_generator_py'})
     for expected in (
-        'class PubsubNodeBase(Node, metaclass=abc.ABCMeta):',
+        'from . import interfaces_node_base_parameters',
+        'class InterfacesNodeBase(Node, metaclass=abc.ABCMeta):',
+        "super().__init__('interfaces_node', **kwargs)",
+        'self.param_listener_ = interfaces_node_base_parameters.interfaces_node.ParamListener(self)',
         'self.pub_echo_out = self.create_publisher(',
-        'std_msgs.msg.String',
         'def on_echo_in(self, msg):',
+        'self.srv_add = self.create_service(',
+        'def on_add(self, request, response):',
+        'self.cli_delegate_add = self.create_client(',
+        'self.action_srv_fibonacci = rclpy.action.ActionServer(',
+        'def execute_fibonacci(self, goal_handle):',
+        'self.action_cli_delegate_fibonacci = rclpy.action.ActionClient(',
     ):
         assert expected in generated
+
+    parameters_yaml = generate_parameter_yaml(doc, 'interfaces_node_base')
+    assert parameters_yaml.startswith('interfaces_node:')
+    assert 'greeting:' in parameters_yaml
+    assert '!!python' not in parameters_yaml
 
 
 def test_generate_python_rejects_includes():
@@ -126,12 +172,13 @@ def test_generate_python_rejects_invalid_target_name():
 def test_cli_writes_generated_module(tmp_path):
     result = main([
         '--nodl-file',
-        str(_FIXTURES / 'pubsub_node.nodl.yaml'),
+        str(_FIXTURES / 'interfaces_node.nodl.yaml'),
         '--output-dir',
         str(tmp_path),
         '--target-name',
-        'pubsub_node',
+        'interfaces_node_base',
     ])
 
     assert result == 0
-    assert (tmp_path / 'pubsub_node.py').is_file()
+    assert (tmp_path / 'interfaces_node_base.py').is_file()
+    assert (tmp_path / 'interfaces_node_base_parameters.py').is_file()
