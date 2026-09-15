@@ -1,8 +1,8 @@
 ---
 nodl_version: 2
-description: Fake laser publisher from the dummy_robot demo.
+description: Candidate Dummy laser contract with a different topic name.
 publishers:
-  - name: scan
+  - name: scan_regressed
     type: sensor_msgs/msg/LaserScan
     description: Synthetic laser scan used by the RViz robot demo.
     qos:

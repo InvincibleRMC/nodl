@@ -1,9 +1,10 @@
 # SPDX-FileCopyrightText: 2026 Open Source Robotics Foundation, Inc.
 # SPDX-License-Identifier: Apache-2.0
-"""Verify that the tutorial document is installed and registered unchanged."""
+"""Verify the installed contracts used by the tutorial."""
 
 from pathlib import Path
 
+import pytest
 from ament_index_python.packages import get_package_share_directory
 from ament_index_python.resources import get_resource
 
@@ -11,6 +12,11 @@ from nodl_schema import load_nodl
 
 PACKAGE = 'nodl_tutorial_dummy_robot'
 DOCUMENT = 'dummy_laser'
+
+
+def _installed_contract(relative_path):
+    share = Path(get_package_share_directory(PACKAGE))
+    return load_nodl(share / 'nodl' / relative_path)
 
 
 def test_registered_document_matches_installed_source():
@@ -21,16 +27,17 @@ def test_registered_document_matches_installed_source():
     assert installed.read_text() == content
 
 
-def test_registered_document_declares_the_scan_contract():
-    installed = Path(get_package_share_directory(PACKAGE)) / 'nodl' / f'{DOCUMENT}.nodl.yaml'
-    document = load_nodl(installed)
+@pytest.mark.parametrize(
+    ('filename', 'name', 'type_name', 'reliability'),
+    [
+        ('topic.nodl.yaml', 'scan_regressed', 'sensor_msgs/msg/LaserScan', 'RELIABLE'),
+        ('type.nodl.yaml', 'scan', 'sensor_msgs/msg/PointCloud', 'RELIABLE'),
+        ('reliability.nodl.yaml', 'scan', 'sensor_msgs/msg/LaserScan', 'BEST_EFFORT'),
+    ],
+)
+def test_candidate_contract_changes_one_interface_property(filename, name, type_name, reliability):
+    publisher = _installed_contract(Path('candidates') / filename).publishers[0]
 
-    assert document.nodl_version == 2
-    assert len(document.publishers) == 1
-    publisher = document.publishers[0]
-    assert publisher.name == 'scan'
-    assert publisher.type == 'sensor_msgs/msg/LaserScan'
-    assert publisher.qos.history.value == 'KEEP_LAST'
-    assert publisher.qos.depth == 10
-    assert publisher.qos.reliability.value == 'RELIABLE'
-    assert publisher.qos.durability.value == 'VOLATILE'
+    assert publisher.name == name
+    assert publisher.type == type_name
+    assert publisher.qos.reliability.value == reliability

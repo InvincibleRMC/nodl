@@ -128,7 +128,7 @@ Visualization Manager:
       Position Transformer: XYZ
       Queue Size: 10
       Selectable: true
-      Size (Pixels): 5
+      Size (Pixels): 8
       Size (m): 0.00999999978
       Style: Flat Squares
       Topic: /scan
@@ -172,7 +172,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 5
+      Distance: 5.5
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
@@ -181,7 +181,7 @@ Visualization Manager:
       Focal Point:
         X: 0
         Y: 0
-        Z: 1.5
+        Z: 1.8
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.0500000007
       Name: Current View
