@@ -7,10 +7,11 @@ from pathlib import Path
 
 import pytest
 
-from nodl_generator_py import generate_parameter_yaml, generate_python
+from nodl_generator_py import generate_parameter_yaml
 from nodl_generator_py.cli import main
 from nodl_generator_py.generator import (
     _qos_to_py,
+    _render_python,
     _ros_type_to_import,
     _ros_type_to_py,
     _snake_to_pascal,
@@ -119,13 +120,13 @@ def test_zero_qos_durations_use_unlimited_defaults():
     )
     doc = NodlDocument(publishers=[TopicEndpoint(name='status', type='std_msgs/msg/String', qos=qos)])
 
-    assert 'Duration' not in generate_python(doc, 'example_node')
+    assert 'Duration' not in _render_python(doc, 'example_node')
 
 
-def test_generate_python():
+def test_render_python():
     doc = load_nodl(_FIXTURES / 'interfaces_node.nodl.yaml', resolve=False)
 
-    generated = generate_python(doc, 'interfaces_node_base')
+    generated = _render_python(doc, 'interfaces_node_base')
 
     tree = ast.parse(generated)
     imports = {
@@ -146,6 +147,10 @@ def test_generate_python():
         'def on_add(self, request, response):',
         'self.cli_delegate_add = self.create_client(',
         'self.action_srv_fibonacci = rclpy.action.ActionServer(',
+        'goal_callback=self.on_fibonacci_goal,',
+        'cancel_callback=self.on_fibonacci_cancel,',
+        'def on_fibonacci_goal(self, goal_request):',
+        'def on_fibonacci_cancel(self, goal_handle):',
         'def execute_fibonacci(self, goal_handle):',
         'self.action_cli_delegate_fibonacci = rclpy.action.ActionClient(',
     ):
@@ -157,16 +162,16 @@ def test_generate_python():
     assert '!!python' not in parameters_yaml
 
 
-def test_generate_python_rejects_includes():
+def test_render_python_rejects_unresolved_includes():
     doc = NodlDocument(include=[Reference(ref='nodl://example/base')])
 
-    with pytest.raises(NotImplementedError, match='does not yet support include composition'):
-        generate_python(doc, 'including_node')
+    with pytest.raises(NotImplementedError, match='requires a resolved, flat'):
+        _render_python(doc, 'including_node')
 
 
-def test_generate_python_rejects_invalid_target_name():
+def test_render_python_rejects_invalid_target_name():
     with pytest.raises(ValueError, match='valid Python identifier'):
-        generate_python(NodlDocument(), 'invalid-name')
+        _render_python(NodlDocument(), 'invalid-name')
 
 
 def test_cli_writes_generated_module(tmp_path):
@@ -182,3 +187,33 @@ def test_cli_writes_generated_module(tmp_path):
     assert result == 0
     assert (tmp_path / 'interfaces_node_base.py').is_file()
     assert (tmp_path / 'interfaces_node_base_parameters.py').is_file()
+    doc = load_nodl(_FIXTURES / 'interfaces_node.nodl.yaml', resolve=False)
+    assert (tmp_path / 'interfaces_node_base.py').read_text(encoding='utf-8') == _render_python(
+        doc,
+        'interfaces_node_base',
+    )
+
+
+def test_cli_writes_transitive_cmake_dependencies(tmp_path):
+    included = tmp_path / 'included.nodl.yaml'
+    included.write_text('nodl_version: 2\n', encoding='utf-8')
+    root = tmp_path / 'root.nodl.yaml'
+    root.write_text(
+        'nodl_version: 2\ninclude:\n  - ref: local://included.nodl.yaml\n',
+        encoding='utf-8',
+    )
+
+    result = main([
+        '--nodl-file',
+        str(root),
+        '--output-dir',
+        str(tmp_path),
+        '--target-name',
+        'example_base',
+        '--cmake-deps',
+    ])
+
+    assert result == 0
+    deps = (tmp_path / 'example_base_deps.cmake').read_text(encoding='utf-8')
+    assert str(root.resolve()) in deps
+    assert str(included.resolve()) in deps
