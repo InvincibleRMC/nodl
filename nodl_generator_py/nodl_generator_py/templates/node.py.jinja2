@@ -87,12 +87,12 @@ class {{ class_name }}({{ base_class }}{% if subscriptions or service_servers or
         """Accept or reject a goal received on {{ action.name }}."""
         return rclpy.action.GoalResponse.ACCEPT
 
-    def on_{{ action.identifier }}_cancel(self, goal_handle: rclpy.action.server.ServerGoalHandle[{{ action.py_type }}.Goal, {{ action.py_type }}.Result, {{ action.py_type }}.Feedback, {{ action.py_type }}.Impl]) -> rclpy.action.CancelResponse:
+    def on_{{ action.identifier }}_cancel(self, goal_handle: rclpy.action.server.ServerGoalHandle) -> rclpy.action.CancelResponse:
         """Accept or reject cancellation of a goal on {{ action.name }}."""
         return rclpy.action.CancelResponse.ACCEPT
 
     @abc.abstractmethod
-    def {{ action.callback_name }}(self, goal_handle: rclpy.action.server.ServerGoalHandle[{{ action.py_type }}.Goal, {{ action.py_type }}.Result, {{ action.py_type }}.Feedback, {{ action.py_type }}.Impl]) -> {{ action.py_type }}.Result:
+    def {{ action.callback_name }}(self, goal_handle: rclpy.action.server.ServerGoalHandle) -> {{ action.py_type }}.Result:
         """Execute a goal received on {{ action.name }}."""
         raise NotImplementedError
     {% endfor %}

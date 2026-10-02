@@ -151,8 +151,8 @@ def test_render_python():
         'goal_callback=self.on_fibonacci_goal,',
         'cancel_callback=self.on_fibonacci_cancel,',
         'def on_fibonacci_goal(self, goal_request: example_interfaces.action.Fibonacci.Goal) -> rclpy.action.GoalResponse:',
-        'def on_fibonacci_cancel(self, goal_handle: rclpy.action.server.ServerGoalHandle[example_interfaces.action.Fibonacci.Goal, example_interfaces.action.Fibonacci.Result, example_interfaces.action.Fibonacci.Feedback, example_interfaces.action.Fibonacci.Impl]) -> rclpy.action.CancelResponse:',
-        'def execute_fibonacci(self, goal_handle: rclpy.action.server.ServerGoalHandle[example_interfaces.action.Fibonacci.Goal, example_interfaces.action.Fibonacci.Result, example_interfaces.action.Fibonacci.Feedback, example_interfaces.action.Fibonacci.Impl]) -> example_interfaces.action.Fibonacci.Result:',
+        'def on_fibonacci_cancel(self, goal_handle: rclpy.action.server.ServerGoalHandle) -> rclpy.action.CancelResponse:',
+        'def execute_fibonacci(self, goal_handle: rclpy.action.server.ServerGoalHandle) -> example_interfaces.action.Fibonacci.Result:',
         'self.action_cli_delegate_fibonacci = rclpy.action.ActionClient(',
     ):
         assert expected in generated
